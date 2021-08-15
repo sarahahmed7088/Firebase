@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bootstrap.css">
+      <!-- Add Firebase products that you want to use -->
+      <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-app.js"></script>
+      <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-database.js"></script>
+
+          <!-- jQuery library -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Students</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor03" aria-controls="navbarColor03" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+  
+      <div class="collapse navbar-collapse" id="navbarColor03">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">Home
+              <span class="visually-hidden">(current)</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">About</a>
+          </li>
+        </ul>
+    
+      </div>
+    </div>
+  </nav>
+<div class="container justify-content-center text-center w-50">
+  <div class="form-group">
+    <input type="hidden" class="form-control" id="studentId" >
+    <label for="exampleInputtText" class="form-label mt-4">First Name</label>
+    <input type="text" class="form-control" id="exampleInputText" aria-describedby="emailHelp" placeholder="Enter First Name">
+  </div>
+  <div class="form-group">
+    <label for="exampleInputLname" class="form-label mt-4">Last Name</label>
+    <input type="text" class="form-control" id="exampleInputLname" aria-describedby="emailHelp" placeholder="Enter Last Name">
+  </div>
+  <div class="form-group">
+    <label for="exampleInputAge" class="form-label mt-4">Age</label>
+    <input type="text" class="form-control" id="exampleInputAge" aria-describedby="emailHelp"  min="10" max="80" placeholder="Enter Age">
+  </div>
+
+   <select id="selectedFaculty" >
+     <option value="0">Select Faculty</option>
+   </select>
+
+  <button type="button" class="btn btn-light " onclick="AddStudent()">Save changes</button>
+
+  <table class="table table-hover my-5" id="tableDisplayStudents">
+    <thead>
+      <tr> 
+        <th scope="col">First Name</th>
+        <th scope="col">Last Name</th>
+        <th scope="col">Age</th>
+        <th scope="col">Faculty Name</th>
+        <th scope="col">Operations</th>
+      </tr>
+    </thead>
+    <tbody>
+     
+    </tbody>
+  </table>
+</div>
+
+
+
+
+
+<script>
+     var firebaseConfig = {
+                apiKey: "AIzaSyB7mofAmbGtGEiA6CCe9vBPG3PML7AxiEY",
+                authDomain: "my-project-1545249981934.firebaseapp.com",
+                projectId: "my-project-1545249981934",
+                storageBucket: "my-project-1545249981934.appspot.com",
+                messagingSenderId: "498420827615",
+                appId: "1:498420827615:web:da0f68ed1e18a0a6a9306a"
+ 
+             };
+//student DB
+const app1 = firebase.initializeApp({
+  databaseURL: "https://my-project-1545249981934-default-rtdb.firebaseio.com"
+});
+//faculty DB
+const app2 = firebase.initializeApp({
+  databaseURL: "https://my-project-1545249981934-default-rtdb.firebaseio.com"
+}, 'app2');
+
+var database1 = firebase.database();
+var database2 = firebase.database(app2);
+
+  database1.ref('/Students').on('value',(snapshot)=>{
+    DisplayStudents(snapshot.val());
+  });
+ 
+
+  database2.ref('/Faculty').on('value',(snapshot)=>{
+
+    DisplayFaculties(snapshot.val());
+
+  });
+
+
+
+function DisplayFaculties(data){
+
+for(var faculty in data)
+{   
+  //console.log(data[faculty].name)
+
+  $("#selectedFaculty").append(`<option>${data[faculty].name}</option>`);
+}
+}
+
+  function AddStudent(){
+                var id = $("#studentId").val();
+                var Fname = $("#exampleInputText").val();
+                var Lname = $("#exampleInputLname").val();
+                var Age = $("#exampleInputAge").val();
+                var faculty=$('#selectedFaculty').find(":selected").text();
+                var data = {Fname:Fname,Lname:Lname,Age:Age,faculty:faculty};
+                console.log(data);
+                if(id == ""){ 
+                    database1.ref().child('Students').push(data);
+                }
+
+                else{ 
+                   var updates = {};
+                   updates["/Students/"+id]=data;
+                   database1.ref().update(updates);
+                }
+
+                Clear();
+            }
+
+
+            function DisplayStudents(data){
+                $("#tableDisplayStudents>tbody").empty();
+          
+            
+                for(var item in data){
+                    var row = `<tr>
+            
+                            <td>${data[item].Fname}</td>
+                            <td>${data[item].Lname}</td>
+                            <td>${(data[item].Age)}</td>
+                            <td>${(data[item].faculty)}</td>
+                            <td>
+                            <button type="button" class="btn btn-outline-warning" onclick="GetStudentsbyID('${item}')">Update</button>
+                            <button type="button" class="btn btn-outline-danger" onclick="DeleteStudents('${item}')">Delete</button>
+                            </td>
+                        </tr>`;
+                    $("#tableDisplayStudents>tbody").append(row);
+                }
+            }
+
+            function GetStudentsbyID(studentId){
+                database1.ref().child("Students").child(studentId).get().then((snapshot)=>{
+                    var data = snapshot.val();
+                    $("#studentId").val(studentId);
+                    $("#exampleInputText").val(data.Fname);
+                    $("#exampleInputLname").val(data.Lname);
+                    $("#exampleInputAge").val(data.Age);
+                    $("#selectedFaculty").val(data.faculty);
+                });
+            }
+
+            function Clear(){
+                $("#studentId").val("");
+                $("#exampleInputText").val("");
+                $("#exampleInputLname").val("");
+                $("#exampleInputAge").val("");
+                $("#selectedFaculty").val(0);
+            }
+
+            function DeleteStudents(studentId){
+                var sure = confirm("Are tou sure?");
+                if(sure){
+                   var updates = {};
+                   updates["/Students/"+studentId] = null;
+                   database1.ref().update(updates);
+                } 
+            }
+</script>
+
+
+<!-- Popper JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
